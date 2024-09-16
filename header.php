@@ -12,6 +12,11 @@
                 <li class="nav-item">
                     <a class="nav-link" href="contact.php">Contact</a>
                 </li>
+                <?php if (isset($_SESSION['LOGGED_USER'])) : ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="logout.php">Déconnexion</a>
+                    </li>
+                <?php endif; ?>
             </ul>
         </div>
     </div>
