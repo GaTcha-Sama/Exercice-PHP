@@ -30,7 +30,7 @@ require_once(__DIR__ . '/functions.php');
 
         <?php foreach (getRecipes($recipes) as $recipe) : ?>
             <article>
-                <h3><?php echo($recipe['title']); ?></h3>
+                <h3><a href="recipes_read.php?id=<?php echo($recipe['recipe_id']); ?>"><?php echo($recipe['title']); ?></a></h3>
                 <div><?php echo $recipe['recipe']; ?></div>
                 <i><?php echo displayAuthor($recipe['author'], $users); ?></i>
                 <?php if (isset($_SESSION['LOGGED_USER']) && $recipe['author'] === $_SESSION['LOGGED_USER']['email']) : ?>
