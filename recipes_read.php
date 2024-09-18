@@ -16,10 +16,11 @@ if (!isset($getData['id']) || !is_numeric($getData['id'])) {
 }
 
 // On récupère la recette
-$retrieveRecipeWithCommentsStatement = $mysqlClient->prepare('SELECT r.*, c.comment_id, c.comment, c.user_id, u.full_name FROM recipes r 
+$retrieveRecipeWithCommentsStatement = $mysqlClient->prepare('SELECT r.*, c.comment_id, c.comment, c.user_id,  DATE_FORMAT(c.created_at, "%d/%m/%Y") as comment_date, u.full_name FROM recipes r 
 LEFT JOIN comments c on c.recipe_id = r.recipe_id
 LEFT JOIN users u ON u.user_id = c.user_id
-WHERE r.recipe_id = :id ');
+WHERE r.recipe_id = :id 
+ORDER BY comment_date DESC');
 $retrieveRecipeWithCommentsStatement->execute([
     'id' => (int)$getData['id'],
 ]);
@@ -29,6 +30,12 @@ if ($recipeWithComments === []) {
     echo('La recette n\'existe pas');
     return;
 }
+$retrieveAverageRatingStatement = $mysqlClient->prepare('SELECT ROUND(AVG(c.review),1) as rating FROM recipes r LEFT JOIN comments c on r.recipe_id = c.recipe_id WHERE r.recipe_id = :id');
+$retrieveAverageRatingStatement->execute([
+    'id' => (int)$getData['id'],
+]);
+$averageRating = $retrieveAverageRatingStatement->fetch();
+;
 
 $recipe = [
     'recipe_id' => $recipeWithComments[0]['recipe_id'],
@@ -36,6 +43,7 @@ $recipe = [
     'recipe' => $recipeWithComments[0]['recipe'],
     'author' => $recipeWithComments[0]['author'],
     'comments' => [],
+    'rating' => $averageRating['rating'],
 ];
 
 foreach ($recipeWithComments as $comment) {
@@ -44,7 +52,8 @@ foreach ($recipeWithComments as $comment) {
             'comment_id' => $comment['comment_id'],
             'comment' => $comment['comment'],
             'user_id' => (int) $comment['user_id'],
-            'full_name' => $comment['full_name']
+            'full_name' => $comment['full_name'],
+            'created_at' => $comment['comment_date'],
         ];
     }
 }
@@ -73,6 +82,11 @@ foreach ($recipeWithComments as $comment) {
             </article>
             <aside class="col">
                 <p><i>Contribuée par <?php echo($recipe['author']); ?></i></p>
+                <?php if ($recipe['rating'] !== null) : ?>
+                    <p><b>Evaluée par la communauté à <?php echo($recipe['rating']); ?> / 5</b></p>
+                <?php else : ?>
+                    <p><b>Aucune évaluation</b></p>
+                <?php endif; ?>
             </aside>
         </div>
         <hr />
@@ -81,7 +95,8 @@ foreach ($recipeWithComments as $comment) {
         <div class="row">
             <?php foreach ($recipe['comments'] as $comment) : ?>
                 <div class="comment">
-                    <p><?php echo $comment['comment']; ?></p>
+                    <p><?php echo($comment['created_at']); ?></p>
+                    <p><?php echo($comment['comment']); ?></p>
                     <i>(<?php echo $comment['full_name']; ?>)</i>
                 </div>
             <?php endforeach; ?>
